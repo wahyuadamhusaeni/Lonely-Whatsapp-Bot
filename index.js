@@ -11,7 +11,9 @@ venom
     console.log(`[ ${moment().format("HH:mm:ss")} ] Bot Error ! `);
   });
 
-function start(client) {
+async function start(client) {
+  let info_device = await client.getHostDevice();
+  let my_number = info_device.me._serialized;
   client.onIncomingCall(async (call) => {
     client.sendText(
       call.peerJid,
@@ -24,12 +26,33 @@ function start(client) {
   });
 
   client.onMessage(async (message) => {
+    let is_admin_group = false;
+    let iam_admin_group = false;
+
+    if (message.isGroupMsg == true) {
+      let admin_group = await client.getGroupAdmins(message.from);
+
+      admin_group.forEach((admin) => {
+        if (admin._serialized == message.author) {
+          is_admin_group = true;
+        }
+      });
+
+      admin_group.forEach((admin) => {
+        if (admin._serialized == my_number) {
+          iam_admin_group = true;
+        }
+      });
+    }
+
     if (message.body == "!menu") {
       client.sendText(
         message.from,
         `
             *SELAMAT DATANG 😎*
 ️*List Menu*
+
+➡️ !admin = Menu Khusus Admin Grup🏅
 ➡️ !menu1 = Fun Menu 🌞 
         `
       );
@@ -59,7 +82,117 @@ contoh : *kirim gambar dengan caption !sticker*
       });
     }
 
-    // Admin Menu
+    // Admin Group
+    else if (
+      message.body == "!admin" &&
+      message.isGroupMsg == true &&
+      is_admin_group == true &&
+      iam_admin_group == true
+    ) {
+      client.sendText(
+        message.from,
+        `
+        *SELAMAT DATANG Admi Group 😎*
+        ️*List Menu*
+    *!kick* = Kick member grup.
+    *!add* = Menambah member group.
+    *!promote* = Promote admin grup.
+    *!demote* = Menurunkan admin group.
+    *!leave*  = Bot Keluar group.
+          `
+      );
+    } else if (
+      message.body.startsWith("!kick ") &&
+      message.isGroupMsg == true &&
+      is_admin_group == true &&
+      iam_admin_group == true
+    ) {
+      let number = message.mentionedJidList;
+      number.forEach(async (re) => {
+        await client.removeParticipant(message.from, re);
+      });
+    } else if (
+      message.body.startsWith("!add ") &&
+      message.isGroupMsg == true &&
+      is_admin_group == true &&
+      iam_admin_group == true
+    ) {
+      let number = message.body.slice(5);
+      if (number.indexOf("62") == -1) {
+        const check_no = await client.checkNumberStatus(
+          `${number.replace("0", "62")}@c.us`
+        );
+
+        if (check_no.status == 200) {
+          await client
+            .addParticipant(message.from, `${number.replace("0", "62")}@c.us`)
+            .then(async (re) => {
+              await client.sendMentioned(
+                message.from,
+                `[:] Selamat datang @` +
+                  number +
+                  `! jangan lupa baca Deskripsi group yah 😎👊🏻`,
+                [number]
+              );
+            });
+        } else {
+          client.sendText(message.from, "[:] No Tidak Valid");
+        }
+      } else {
+        client.sendText(message.from, "[:] Format nomor harus 0821xxxxxx");
+      }
+    } else if (
+      message.body.startsWith("!promote ") &&
+      message.isGroupMsg == true &&
+      is_admin_group == true &&
+      iam_admin_group == true
+    ) {
+      let number = message.mentionedJidList;
+      number.forEach(async (re) => {
+        await client
+          .promoteParticipant(message.from, re)
+          .then(async (response) => {
+            await client.sendMentioned(
+              message.from,
+              `[:] @${re.replace(
+                "@c.us",
+                ""
+              )}! sekarang anda adalah admin sob 🔥`,
+              [`@${re.replace("@c.us", "")}`]
+            );
+          });
+      });
+    } else if (
+      message.body.startsWith("!demote ") &&
+      message.isGroupMsg == true &&
+      is_admin_group == true &&
+      iam_admin_group == true
+    ) {
+      let number = message.mentionedJidList;
+      number.forEach(async (re) => {
+        await client
+          .demoteParticipant(message.from, re)
+          .then(async (response) => {
+            await client.sendMentioned(
+              message.from,
+              `[:] @${re.replace("@c.us", "")}! anda diturunkan dari admin 😔`,
+              [`@${re.replace("@c.us", "")}`]
+            );
+          });
+      });
+    } else if (
+      message.body == "!leave" &&
+      message.isGroupMsg == true &&
+      is_admin_group == true
+    ) {
+      await client
+        .sendText(message.from, `Selamat Tinggal Semua 😭`)
+        .then(async (re) => {
+          await client.leaveGroup(message.from);
+        });
+    }
+
+    // Admin Menu Settings
     else if (
       message.body == "!menu_admin" &&
       number_admin.includes(message.from)
@@ -82,8 +215,6 @@ contoh : *kirim gambar dengan caption !sticker*
     ➡️ !admin_restart = Restart Service
 
     ➡️ !admin_info = Info Service
-
-
             `
       );
     } else if (
@@ -133,10 +264,17 @@ contoh : *kirim gambar dengan caption !sticker*
         message.from,
         `
 Number    : ${info_device.me.user}
-Server    : ${info_device.me.server}
 Battery   : ${info_device.battery} %
       `
       );
     }
+  });
+
+  client.onAddedToGroup(async (notification) => {
+    let number = await notification.id;
+    await client.sendText(
+      number,
+      `Hai perkenalkan aku Lonely Bot, Salam Kenal`
+    );
   });
 }
