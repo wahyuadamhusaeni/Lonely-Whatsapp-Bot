@@ -1,0 +1,16 @@
+{
+  "name": "lonelybot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Adamatuh",
+  "license": "ISC",
+  "dependencies": {
+    "mime-types": "^2.1.27",
+    "moment": "^2.29.1",
+    "venom-bot": "^2.0.18"
+  }
+}
