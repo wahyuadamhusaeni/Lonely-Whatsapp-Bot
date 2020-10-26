@@ -2,8 +2,8 @@ const moment = require("moment");
 const venom = require("venom-bot");
 const fs = require("fs");
 const mime = require("mime-types");
+const axios = require("axios");
 const number_admin = ["6282226076210@c.us"];
-
 venom
   .create()
   .then((client) => start(client))
@@ -45,6 +45,10 @@ async function start(client) {
       });
     }
 
+    if (message.type == "sticker" && message.isGroupMsg == false) {
+      await client.sendText(message.from, `Gak ngerti sticker 😭`);
+    }
+
     if (message.body == "!menu") {
       client.sendText(
         message.from,
@@ -77,6 +81,9 @@ contoh : *kirim gambar dengan caption !sticker*
         if (!err) {
           await client
             .sendImageAsSticker(message.from, `./${fileName}`)
+            .then(async (re) => {
+              fs.unlinkSync(`./${fileName}`);
+            })
             .catch((err) => {});
         }
       });
@@ -234,10 +241,11 @@ contoh : *kirim gambar dengan caption !sticker*
       await fs.writeFile(fileName, buffer, async (err) => {
         if (!err) {
           await client.setProfilePic(`./${fileName}`);
-          await client.sendText(
-            message.from,
-            `Profile Photo Berhasil Diganti !`
-          );
+          await client
+            .sendText(message.from, `Profile Photo Berhasil Diganti !`)
+            .then(async (re) => {
+              fs.unlinkSync(`./${fileName}`);
+            });
         } else {
           await client.sendText(message.from, `Profile Photo Gagal Diganti !`);
         }
@@ -267,6 +275,56 @@ Number    : ${info_device.me.user}
 Battery   : ${info_device.battery} %
       `
       );
+    }
+    // Simsimi
+    else if (message.isGroupMsg == false) {
+      await axios
+        .get("http://api.kitabuat.com/simsimi/getapi")
+        .then(async (response) => {
+          if (response.data.status == true) {
+            let api_key = response.data.data;
+            const headers = {
+              "Content-Type": "application/json",
+              "x-api-key": api_key,
+            };
+
+            await axios
+              .post(
+                "https://wsapi.simsimi.com/190410/talk",
+                {
+                  utext: message.body,
+                  lang: "id",
+                  country: ["ID"],
+                  atext_bad_prob_max: 0.5,
+                },
+                {
+                  headers: headers,
+                }
+              )
+              .then(async (re) => {
+                console.log(
+                  `[ ${moment().format("HH:mm:ss")} ]  => Bales Simsimi : ${
+                    re.data.atext
+                  }`
+                );
+                await client.sendText(message.from, re.data.atext);
+              })
+              .catch(async (error) => {
+                console.log(
+                  `[ ${moment().format("HH:mm:ss")} ]  => Simsimi Error `
+                );
+              });
+          } else {
+            console.log(
+              `[ ${moment().format("HH:mm:ss")} ]  => Simsimi Error `
+            );
+            await client.sendText(message.from, "Simsimi Error Guys 😭");
+          }
+        })
+        .catch(async (error) => {
+          console.log(`[ ${moment().format("HH:mm:ss")} ]  => Simsimi Error `);
+          await client.sendText(message.from, "Simsimi Error Guys 😭");
+        });
     }
   });
 
