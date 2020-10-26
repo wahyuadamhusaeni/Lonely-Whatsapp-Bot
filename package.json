@@ -9,6 +9,7 @@
   "author": "wahyuadamhusaeni",
   "license": "ISC",
   "dependencies": {
+    "axios": "^0.21.0",
     "mime-types": "^2.1.27",
     "moment": "^2.29.1",
     "venom-bot": "^2.0.18"
