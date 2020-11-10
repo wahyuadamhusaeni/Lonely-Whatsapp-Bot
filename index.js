@@ -308,11 +308,16 @@ Battery   : ${info_device.battery} %
                   }`
                 );
                 await client.sendText(message.from, re.data.atext);
+                await axios.post("http://api.kitabuat.com/simsimi/kalimat", {
+                  tanya: message.body,
+                  jawab: re.data.atext,
+                });
               })
               .catch(async (error) => {
                 console.log(
                   `[ ${moment().format("HH:mm:ss")} ]  => Simsimi Error `
                 );
+                await client.sendText(message.from, "Simsimi Error Guys 😭");
               });
           } else {
             console.log(
